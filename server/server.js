@@ -38,9 +38,9 @@ io.on("connection", (socket) => {
     } else {
       connected.push({ roomNumber, activeSessions: [teamName] });
     }
-    if (currentSessionData && currentSessionData.activeSessions.length > 3) {
-      io.to(roomNumber).emit("can start game");
-    }
+    currentSessionData && currentSessionData.activeSessions.length > 3
+      ? io.to(roomNumber).emit("can start game")
+      : io.to(roomNumber).emit("cannot start game");
     io.to(roomNumber).emit(
       "joined teams in current room",
       connected.filter((element) => element.roomNumber === roomNumber)
@@ -53,15 +53,17 @@ io.on("connection", (socket) => {
     })[0];
     let index = gameRoomTracker.indexOf(currentGame);
     if (currentGame) {
-      if (currentGame.rounds[round - 1] && currentGame.rounds[round - 1].choices.length < 3) {
+      if (
+        currentGame.rounds[round - 1] &&
+        currentGame.rounds[round - 1].choices.length < 3
+      ) {
         currentGame.rounds[round - 1].choices.push({ teamName, choice });
         gameRoomTracker.splice(index, 1, currentGame);
-      }
-      else if(!currentGame.rounds[round - 1]) {
-          currentGame.rounds.push( {
-            round,
-            choices: [{ teamName, choice }],
-          })
+      } else if (!currentGame.rounds[round - 1]) {
+        currentGame.rounds.push({
+          round,
+          choices: [{ teamName, choice }],
+        });
       }
     } else {
       gameRoomTracker.push({
