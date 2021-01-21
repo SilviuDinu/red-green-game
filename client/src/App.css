@@ -1,6 +1,6 @@
 * {
   box-sizing: border-box;
--moz-box-sizing: border-box;
+  -moz-box-sizing: border-box;
 }
 
 .App {
@@ -61,9 +61,12 @@
   margin: 0 auto;
 }
 
+button {
+  cursor: pointer;
+}
+
 .join-game-form button {
   height: 42.5px;
-  background-color: green;
   color: #fff;
   box-shadow: none;
   border: none;
@@ -74,6 +77,10 @@
   border-radius: 8px;
 }
 
+ul {
+  list-style: none;
+}
+
 .play-button {
   width: 30%;
   height: 75px;
@@ -82,7 +89,6 @@
   font-size: 18px;
   outline: none;
   border: none;
-  cursor: pointer;
   border-radius: 8px;
 }
 
@@ -105,11 +111,11 @@
   background-color: green;
 }
 
-.button.red:hover {
+button.red:hover {
   transition-duration: 0.4s;
   background-color: rgb(231, 120, 120);
 }
-.button.green:hover {
+button.green:hover {
   transition-duration: 0.4s;
   background-color: rgb(101, 218, 101);
 }
