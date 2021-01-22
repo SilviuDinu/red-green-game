@@ -22,8 +22,6 @@ function App() {
 
   const connect = (e, roomNumber, teamName, choice) => {
     e.preventDefault();
-    console.log(teamName);
-    console.log(parseInt(roomNumber));
     socketRef.current = io("/", { transports: ["polling"] });
     socketRef.current.emit("join game", {
       roomNumber: parseInt(roomNumber),
@@ -36,8 +34,11 @@ function App() {
       alert(data);
     });
     socketRef.current.on("can start game", () => {
-      console.log("can start game")
+      setPlayState();
       setGameStarted(true);
+    });
+    socketRef.current.on("cannot start game", () => {
+      setWaitingState();
     });
 
     setConnected(true);
