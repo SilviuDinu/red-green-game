@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
       });
     }
     currentGame && currentGame.rounds[round - 1].choices.length > 2
-      ? io.to(roomNumber).emit("finish round", gameRoomTracker)
-      : io.to(roomNumber).emit("started game", gameRoomTracker);
+      ? io.to(roomNumber).emit("finish round", gameRoomTracker.filter((element) => element.roomNumber === roomNumber)[0])
+      : io.to(roomNumber).emit("started game", gameRoomTracker.filter((element) => element.roomNumber === roomNumber)[0]);
   });
 });

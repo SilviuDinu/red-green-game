@@ -5,24 +5,33 @@ import RoomInfo from "./components/RoomInfo";
 import Playground from "./components/Playground";
 import { useState, useRef, useEffect } from "react";
 import io from "socket.io-client";
-import immer, { castImmutable } from "immer";
 
 function App() {
   const [connected, setConnected] = useState(false);
   const [connectedTeams, setConnectedTeams] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [isRoomFull, setIsRoomFull] = useState(false);
-  const [choice, setChoice] = useState(null);
   const [round, setRound] = useState(1);
+  const [roundData, setRoundData] = useState([]);
   const [roomNumber, setRoomNumber] = useState("");
   const [teamName, setTeamName] = useState("");
   const [showButtons, setShowButtons] = useState(true);
   const [showWaiting, setShowWaiting] = useState(true);
   const socketRef = useRef();
 
+  useEffect(() => {
+    socketRef.current = io("/", { transports: ["polling"] });
+    socketRef.current.on("finish round", (data) => {
+      // let currentRoundData = [...roundData];
+      // currentRoundData.push(data.rounds);
+      setRoundData(roundData => roundData.concat(data.rounds));
+      setPlayState();
+      setRound(round => round+1);
+    });
+  }, []);
+
   const connect = (e, roomNumber, teamName, choice) => {
     e.preventDefault();
-    socketRef.current = io("/", { transports: ["polling"] });
     socketRef.current.emit("join game", {
       roomNumber: parseInt(roomNumber),
       teamName: teamName,
@@ -63,23 +72,17 @@ function App() {
     socketRef.current.on("started game", (roundData) => {
       console.log(roundData);
     });
-    socketRef.current.on("finish round", (roundData) => {
-      setPlayState();
-      console.log(round++)
-      setRound(round++);
-      console.log("round done", roundData)
-    });
   };
 
   const setWaitingState = () => {
     setShowButtons(false);
     setShowWaiting(true);
-  }
+  };
 
   const setPlayState = () => {
     setShowWaiting(false);
     setShowButtons(true);
-  }
+  };
 
   let body;
   if (connected) {
@@ -91,8 +94,9 @@ function App() {
           gameStarted={gameStarted}
           play={play}
           roomNumber={roomNumber}
+          roundData={roundData}
+          connectedTeams={connectedTeams}
           teamName={teamName}
-          choice={choice}
           showButtons={showButtons}
           showWaiting={showWaiting}
           setWaitingState={setWaitingState}
