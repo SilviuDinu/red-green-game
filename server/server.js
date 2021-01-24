@@ -22,21 +22,33 @@ const gameRoomTracker = [];
 
 io.on("connection", (socket) => {
   console.log("new client connected");
-  socket.on("join game", ({ roomNumber, teamName }) => {
-    socket.join(roomNumber, teamName);
+  socket.on("join game", ({ roomNumber, teamName, isFacilitator }) => {
     let currentSessionData = connected.filter(
       (element) => element.roomNumber === roomNumber
     )[0];
+    if (
+      currentSessionData &&
+      currentSessionData.activeSessions.find(
+        (element) => element.teamName === teamName
+      )
+    ) {
+        socket.emit("name taken", `The name ${teamName} is taken`);
+        return;
+    }
+    socket.join(roomNumber, teamName);
     let index = connected.indexOf(currentSessionData);
     if (currentSessionData) {
       if (currentSessionData.activeSessions.length > 3) {
         socket.emit("room is full", `room ${roomNumber} full`);
         return;
       }
-      currentSessionData.activeSessions.push(teamName);
+      currentSessionData.activeSessions.push({ teamName, isFacilitator });
       connected.splice(index, 1, currentSessionData);
     } else {
-      connected.push({ roomNumber, activeSessions: [teamName] });
+      connected.push({
+        roomNumber,
+        activeSessions: [{ teamName, isFacilitator }],
+      });
     }
     currentSessionData && currentSessionData.activeSessions.length > 3
       ? io.to(roomNumber).emit("can start game")
@@ -77,7 +89,21 @@ io.on("connection", (socket) => {
       });
     }
     currentGame && currentGame.rounds[round - 1].choices.length > 2
-      ? io.to(roomNumber).emit("finish round", gameRoomTracker)
-      : io.to(roomNumber).emit("started game", gameRoomTracker);
+      ? io
+          .to(roomNumber)
+          .emit(
+            "finish round",
+            gameRoomTracker.filter(
+              (element) => element.roomNumber === roomNumber
+            )[0]
+          )
+      : io
+          .to(roomNumber)
+          .emit(
+            "started game",
+            gameRoomTracker.filter(
+              (element) => element.roomNumber === roomNumber
+            )[0]
+          );
   });
 });
