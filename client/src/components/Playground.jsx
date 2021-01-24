@@ -1,6 +1,7 @@
 import Buttons from "./Buttons";
 import RoundTitle from "./RoundTitle";
 import RoundInfo from "./RoundInfo";
+import Message from "./Message";
 
 export default function Playground(props) {
   console.log(props.roundData);
@@ -11,9 +12,11 @@ export default function Playground(props) {
   }
   let playgroundBody;
   if (props.showButtons) {
-    playgroundBody = <Buttons play={playChoice} />;
+    playgroundBody = (
+      <Buttons play={playChoice} isFacilitator={props.isFacilitator} />
+    );
   } else if (props.showWaiting) {
-    playgroundBody = <p>Waiting for the other teams...</p>;
+    playgroundBody = <Message type="message" message={"Waiting for other teams..."} />
   }
   return (
     <div className="playground">
@@ -25,7 +28,9 @@ export default function Playground(props) {
           roundData={props.roundData}
           connectedTeams={props.connectedTeams}
         />
-      ) : <p>Finish the round to see scores...</p>}
+      ) : (
+        <Message type="message" message={"Finish the round to see scores..."} />
+      )}
     </div>
   );
 }

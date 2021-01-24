@@ -1,4 +1,15 @@
 export default function RoundInfo(props) {
+  const renderCurrentRoundChoices = (choices) => {
+    let sortedChoices = [];
+    props.connectedTeams.forEach((team) => {
+      choices.forEach((choice, index) => {
+        if (choice.teamName === team.teamName) {
+          sortedChoices.push(<td key={index}>{choice.choice}</td>);
+        }
+      });
+    });
+    return sortedChoices;
+  };
   return (
     <div className="container">
       <span>Score board</span>
@@ -7,7 +18,9 @@ export default function RoundInfo(props) {
           <tr>
             <th>Round</th>
             {props.connectedTeams.map((elem, index) => {
-              return <th key={index}>{elem}</th>;
+              return elem.isFacilitator === false ? (
+                <th key={index}>{elem.teamName}</th>
+              ) : null;
             })}
           </tr>
         </thead>
@@ -16,17 +29,7 @@ export default function RoundInfo(props) {
             return (
               <tr key={index}>
                 <td>{elem.round}</td>
-                {
-                  <td>
-                    {elem.choices.map((e, i) => {
-                      return (
-                        <>
-                          {e.teamName} - {e.choice}
-                        </>
-                      );
-                    })}
-                  </td>
-                }
+                {renderCurrentRoundChoices(elem.choices)}
               </tr>
             );
           })}

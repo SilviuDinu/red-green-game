@@ -11,33 +11,42 @@ function App() {
   const [connectedTeams, setConnectedTeams] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
   const [isRoomFull, setIsRoomFull] = useState(false);
+  const [isNameTaken, setIsNameTaken] = useState(false);
   const [round, setRound] = useState(1);
   const [roundData, setRoundData] = useState([]);
   const [roomNumber, setRoomNumber] = useState("");
   const [teamName, setTeamName] = useState("");
   const [showButtons, setShowButtons] = useState(true);
   const [showWaiting, setShowWaiting] = useState(true);
+  const [isFacilitator, setIsFacilitator] = useState(false);
+  const [message, setMessage] = useState("");
   const socketRef = useRef();
 
   useEffect(() => {
-    socketRef.current = io("/", { transports: ["polling"] });
+    if (!socketRef.current) {
+      socketRef.current = io("/", { transports: ["polling"] });
+    }
     socketRef.current.on("finish round", (data) => {
-      // let currentRoundData = [...roundData];
-      // currentRoundData.push(data.rounds);
-      setRoundData(roundData => roundData.concat(data.rounds));
+      setRoundData(data.rounds);
       setPlayState();
-      setRound(round => round+1);
+      setRound((round) => round + 1);
     });
   }, []);
 
-  const connect = (e, roomNumber, teamName, choice) => {
+  const handleCheck = () => {
+    setIsFacilitator(true);
+  };
+
+  const connect = (e, roomNumber, teamName, facilitator) => {
     e.preventDefault();
     socketRef.current.emit("join game", {
       roomNumber: parseInt(roomNumber),
       teamName: teamName,
+      isFacilitator: facilitator,
     });
     socketRef.current.on("joined teams in current room", (data) => {
       setConnectedTeams(data[0].activeSessions);
+      setConnected(true);
     });
     socketRef.current.on("room is full", (data) => {
       alert(data);
@@ -49,8 +58,10 @@ function App() {
     socketRef.current.on("cannot start game", () => {
       setWaitingState();
     });
-
-    setConnected(true);
+    socketRef.current.on("name taken", (data) => {
+      setIsNameTaken(true);
+      setMessage(data);
+    });
   };
 
   const changeRoomNumber = (e) => {
@@ -88,14 +99,21 @@ function App() {
   if (connected) {
     body = (
       <>
-        <RoomInfo connectedTeams={connectedTeams} roomNumber={roomNumber} />
+        <RoomInfo
+          connectedTeams={connectedTeams}
+          roomNumber={roomNumber}
+          teamName={teamName}
+          message={message}
+        />
         <Playground
           round={round}
           gameStarted={gameStarted}
           play={play}
           roomNumber={roomNumber}
           roundData={roundData}
+          message={message}
           connectedTeams={connectedTeams}
+          isFacilitator={isFacilitator}
           teamName={teamName}
           showButtons={showButtons}
           showWaiting={showWaiting}
@@ -110,6 +128,10 @@ function App() {
         connect={connect}
         roomNumber={roomNumber}
         teamName={teamName}
+        isNameTaken={isNameTaken}
+        handleCheck={handleCheck}
+        message={message}
+        isFacilitator={isFacilitator}
         onChangeRoomNumber={changeRoomNumber}
         onChangeTeamName={changeTeamName}
       />

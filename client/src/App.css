@@ -45,7 +45,23 @@
   align-items: center;
 }
 
-.join-game-form input {
+.message {
+  color: #fff;
+}
+.error{
+  color: #ff0033;
+}
+.check {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 12px;
+}
+.facilitator-check {
+  display: inline-block;
+  vertical-align: middle;
+  color: #fff;
+}
+.join-game-form input.text {
   display: block;
   margin: 12px 0 0 0;
   padding: 5px;
