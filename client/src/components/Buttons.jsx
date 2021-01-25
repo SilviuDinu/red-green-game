@@ -18,6 +18,7 @@ export default function Buttons(props) {
       ) : (
         <Message
           type="message"
+          elem="p"
           message={
             "As facilitator, you cannot vote. You need to wait till the end of the round to discuss with the teams."
           }

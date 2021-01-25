@@ -48,7 +48,7 @@
 .message {
   color: #fff;
 }
-.error{
+.error {
   color: #ff0033;
 }
 .check {
@@ -81,7 +81,7 @@ button {
   cursor: pointer;
 }
 
-.join-game-form button {
+.join-game-form button{
   height: 42.5px;
   color: #fff;
   box-shadow: none;
@@ -93,6 +93,14 @@ button {
   border-radius: 8px;
 }
 
+.join {
+  background-color: rgb(211, 57, 57);
+  transition-duration: 0.4s;
+}
+.join:hover{
+  background-color: green;
+  transition-duration: 0.4s;
+}
 ul {
   list-style: none;
 }
@@ -125,6 +133,20 @@ ul {
 
 .green {
   background-color: green;
+}
+
+table.score td,
+table.score th {
+  width: 75px;
+  height: 42.5px;
+  border: 1px solid;
+}
+
+table.score {
+  border: 1px solid;
+  border-collapse: collapse;
+  color: #fff;
+  margin: 0 auto;
 }
 
 button.red:hover {

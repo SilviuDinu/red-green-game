@@ -41,12 +41,12 @@ export default function LandingPage(props) {
               onClick={props.handleCheck}
             />
           </div>
-          <button type="submit" className="green">
+          <button type="submit" className="join">
             Join Game
           </button>
         </form>
-        {props.isNameTaken ? (
-          <Message type="error" message={props.message} />
+        {props.anyConnectionError ? (
+          <Message elem="p" type="error" message={props.message} />
         ) : null}
       </div>
     </>
