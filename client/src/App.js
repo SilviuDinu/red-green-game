@@ -10,8 +10,7 @@ function App() {
   const [connected, setConnected] = useState(false);
   const [connectedTeams, setConnectedTeams] = useState([]);
   const [gameStarted, setGameStarted] = useState(false);
-  const [isRoomFull, setIsRoomFull] = useState(false);
-  const [isNameTaken, setIsNameTaken] = useState(false);
+  const [anyConnectionError, setAnyConnectionError] = useState(false);
   const [round, setRound] = useState(1);
   const [roundData, setRoundData] = useState([]);
   const [roomNumber, setRoomNumber] = useState("");
@@ -34,7 +33,7 @@ function App() {
   }, []);
 
   const handleCheck = () => {
-    setIsFacilitator(true);
+    setIsFacilitator(!isFacilitator);
   };
 
   const connect = (e, roomNumber, teamName, facilitator) => {
@@ -44,12 +43,14 @@ function App() {
       teamName: teamName,
       isFacilitator: facilitator,
     });
+    socketRef.current.on("connection error", (error) => {
+      setAnyConnectionError(true);
+      setMessage(error);
+    });
     socketRef.current.on("joined teams in current room", (data) => {
       setConnectedTeams(data[0].activeSessions);
+      setAnyConnectionError(false);
       setConnected(true);
-    });
-    socketRef.current.on("room is full", (data) => {
-      alert(data);
     });
     socketRef.current.on("can start game", () => {
       setPlayState();
@@ -57,10 +58,6 @@ function App() {
     });
     socketRef.current.on("cannot start game", () => {
       setWaitingState();
-    });
-    socketRef.current.on("name taken", (data) => {
-      setIsNameTaken(true);
-      setMessage(data);
     });
   };
 
@@ -128,7 +125,7 @@ function App() {
         connect={connect}
         roomNumber={roomNumber}
         teamName={teamName}
-        isNameTaken={isNameTaken}
+        anyConnectionError={anyConnectionError}
         handleCheck={handleCheck}
         message={message}
         isFacilitator={isFacilitator}

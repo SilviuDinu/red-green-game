@@ -4,7 +4,6 @@ import RoundInfo from "./RoundInfo";
 import Message from "./Message";
 
 export default function Playground(props) {
-  console.log(props.roundData);
   function playChoice(option) {
     if (props.gameStarted) {
       props.play(props.round, props.roomNumber, props.teamName, option);

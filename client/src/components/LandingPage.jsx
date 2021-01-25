@@ -45,7 +45,7 @@ export default function LandingPage(props) {
             Join Game
           </button>
         </form>
-        {props.isNameTaken ? (
+        {props.anyConnectionError ? (
           <Message type="error" message={props.message} />
         ) : null}
       </div>
