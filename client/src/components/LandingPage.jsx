@@ -46,7 +46,7 @@ export default function LandingPage(props) {
           </button>
         </form>
         {props.anyConnectionError ? (
-          <Message type="error" message={props.message} />
+          <Message elem="p" type="error" message={props.message} />
         ) : null}
       </div>
     </>

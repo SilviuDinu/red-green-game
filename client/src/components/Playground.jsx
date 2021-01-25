@@ -6,7 +6,7 @@ import Message from "./Message";
 export default function Playground(props) {
   function playChoice(option) {
     if (props.gameStarted) {
-      props.play(props.round, props.roomNumber, props.teamName, option);
+      props.play(props.round, props.roomNumber, props.teamName, option, props.score);
     }
   }
   let playgroundBody;
@@ -15,7 +15,7 @@ export default function Playground(props) {
       <Buttons play={playChoice} isFacilitator={props.isFacilitator} />
     );
   } else if (props.showWaiting) {
-    playgroundBody = <Message type="message" message={"Waiting for other teams..."} />
+    playgroundBody = <Message type="message" elem="p" message={"Waiting for other teams..."} />
   }
   return (
     <div className="playground">
@@ -26,9 +26,10 @@ export default function Playground(props) {
           round={props.round}
           roundData={props.roundData}
           connectedTeams={props.connectedTeams}
+          teamName={props.teamName}
         />
       ) : (
-        <Message type="message" message={"Finish the round to see scores..."} />
+        <Message type="message" elem="p" message={"Finish the round to see scores..."} />
       )}
     </div>
   );

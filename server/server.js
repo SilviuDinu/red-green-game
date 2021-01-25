@@ -69,19 +69,19 @@ io.on("connection", socket => {
     );
   });
 
-  socket.on("start game", ({ round, roomNumber, teamName, choice }) => {
+  socket.on("start game", ({ round, roomNumber, teamName, choice, score }) => {
     let currentGame = gameRoomTracker.filter(element => {
       return (element.roomNumber = roomNumber);
     })[0];
     let index = gameRoomTracker.indexOf(currentGame);
     if (currentGame) {
       if (currentGame.rounds[round - 1] && currentGame.rounds[round - 1].choices.length < 3) {
-        currentGame.rounds[round - 1].choices.push({ teamName, choice });
+        currentGame.rounds[round - 1].choices.push({ teamName, choice, score });
         gameRoomTracker.splice(index, 1, currentGame);
       } else if (!currentGame.rounds[round - 1]) {
         currentGame.rounds.push({
           round,
-          choices: [{ teamName, choice }],
+          choices: [{ teamName, choice, score }],
         });
       }
     } else {
@@ -89,14 +89,52 @@ io.on("connection", socket => {
         rounds: [
           {
             round,
-            choices: [{ teamName, choice }],
+            choices: [{ teamName, choice, score }],
           },
         ],
         roomNumber: roomNumber,
       });
     }
-    currentGame && currentGame.rounds[round - 1].choices.length > 2
-      ? io.to(roomNumber).emit("finish round", gameRoomTracker.filter(element => element.roomNumber === roomNumber)[0])
-      : io.to(roomNumber).emit("started game", gameRoomTracker.filter(element => element.roomNumber === roomNumber)[0]);
+    if (currentGame && currentGame.rounds[round - 1].choices.length > 2) {
+      currentGame.rounds[round - 1].choices = calculateCurrentRoundScore(currentGame.rounds[round - 1].choices);
+      io.to(roomNumber).emit("finish round", currentGame);
+    } else {
+      io.to(roomNumber).emit("started game", currentGame);
+    }
+    if (round > 9) {
+      io.to(roomNumber).emit("finish game", "game over");
+    }
   });
 });
+
+const calculateCurrentRoundScore = choices => {
+  let redChoices = choices.filter(choice => choice.choice === "red");
+  let greenChoices = choices.filter(choice => choice.choice === "green");
+
+  switch (true) {
+    case redChoices.length === 3 && greenChoices.length === 0:
+      redChoices.forEach(element => {
+        element.score = -1;
+      });
+      break;
+    case redChoices.length === 2 && greenChoices.length === 1:
+      redChoices.forEach(element => {
+        element.score = 2;
+      });
+      greenChoices[0].score = -3;
+      break;
+    case redChoices.length === 1 && greenChoices.length === 2:
+      greenChoices.forEach(element => {
+        element.score = -2;
+      });
+      redChoices[0].score = 3;
+      break;
+    case redChoices.length === 0 && greenChoices.length === 3:
+      greenChoices.forEach(element => {
+        element.score = 1;
+      });
+      break;
+  }
+
+  return redChoices.concat(greenChoices);
+};

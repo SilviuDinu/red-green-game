@@ -1,7 +1,7 @@
 export default function Message(props) {
   return (
     <div className={props.type}>
-        <p>{props.message}</p>
+        <props.elem>{props.message}</props.elem>
     </div>
   );
 }

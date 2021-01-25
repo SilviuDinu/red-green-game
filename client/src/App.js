@@ -12,6 +12,7 @@ function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [anyConnectionError, setAnyConnectionError] = useState(false);
   const [round, setRound] = useState(1);
+  const [score, setScore] = useState(0);
   const [roundData, setRoundData] = useState([]);
   const [roomNumber, setRoomNumber] = useState("");
   const [teamName, setTeamName] = useState("");
@@ -69,13 +70,14 @@ function App() {
     setTeamName(e.target.value);
   };
 
-  const play = (round, roomNumber, teamName, choice) => {
+  const play = (round, roomNumber, teamName, choice, score) => {
     setWaitingState();
     socketRef.current.emit("start game", {
       round: round,
       roomNumber: parseInt(roomNumber),
       teamName: teamName,
       choice: choice,
+      score: score,
     });
     socketRef.current.on("started game", (roundData) => {
       console.log(roundData);
@@ -104,6 +106,7 @@ function App() {
         />
         <Playground
           round={round}
+          score={score}
           gameStarted={gameStarted}
           play={play}
           roomNumber={roomNumber}

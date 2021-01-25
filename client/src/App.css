@@ -48,7 +48,7 @@
 .message {
   color: #fff;
 }
-.error{
+.error {
   color: #ff0033;
 }
 .check {
@@ -125,6 +125,20 @@ ul {
 
 .green {
   background-color: green;
+}
+
+table.score td,
+table.score th {
+  width: 75px;
+  height: 42.5px;
+  border: 1px solid;
+}
+
+table.score {
+  border: 1px solid;
+  border-collapse: collapse;
+  color: #fff;
+  margin: 0 auto;
 }
 
 button.red:hover {
