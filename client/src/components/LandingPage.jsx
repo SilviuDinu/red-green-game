@@ -41,7 +41,7 @@ export default function LandingPage(props) {
               onClick={props.handleCheck}
             />
           </div>
-          <button type="submit" className="green">
+          <button type="submit" className="join">
             Join Game
           </button>
         </form>

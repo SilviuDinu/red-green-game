@@ -81,7 +81,7 @@ button {
   cursor: pointer;
 }
 
-.join-game-form button {
+.join-game-form button{
   height: 42.5px;
   color: #fff;
   box-shadow: none;
@@ -93,6 +93,14 @@ button {
   border-radius: 8px;
 }
 
+.join {
+  background-color: rgb(211, 57, 57);
+  transition-duration: 0.4s;
+}
+.join:hover{
+  background-color: green;
+  transition-duration: 0.4s;
+}
 ul {
   list-style: none;
 }
