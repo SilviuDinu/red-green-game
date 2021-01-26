@@ -31,7 +31,7 @@ export default function RoundInfo(props) {
     return finalScores;
   };
   return (
-    <div className="container">
+    <div className="round-info container">
       <Message type="message" message="Score board" elem="h2" />
       <table className="score">
         <thead>
@@ -44,12 +44,12 @@ export default function RoundInfo(props) {
         </thead>
         <tbody>
           {props.roundData.map((elem, index) => {
-            return (
+            return elem.choices.length > 2 ? (
               <tr key={index}>
                 <td>{elem.round}</td>
                 {renderCurrentRoundChoices(elem.choices)}
               </tr>
-            );
+            ) : null;
           })}
           <tr>
             <td>Final</td>
