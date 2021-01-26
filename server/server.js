@@ -22,7 +22,7 @@ const gameRoomTracker = [];
 
 io.on("connection", socket => {
   console.log("new client connected");
-  socket.on("join game", ({ roomNumber, teamName, isFacilitator }) => {
+  socket.on("join game", async ({ roomNumber, teamName, isFacilitator }) => {
     let currentSessionData = connected.filter(element => element.roomNumber === roomNumber)[0];
     if (currentSessionData) {
       if (currentSessionData.activeSessions.length > 3) {
@@ -60,6 +60,7 @@ io.on("connection", socket => {
         activeSessions: [{ teamName, isFacilitator }],
       });
     }
+
     currentSessionData && currentSessionData.activeSessions.length > 3
       ? io.to(roomNumber).emit("can start game")
       : io.to(roomNumber).emit("cannot start game");
@@ -69,10 +70,11 @@ io.on("connection", socket => {
     );
   });
 
-  socket.on("start game", ({ round, roomNumber, teamName, choice, score }) => {
-    let currentGame = gameRoomTracker.filter(element => {
-      return (element.roomNumber = roomNumber);
-    })[0];
+  socket.on("start game", async ({ round, roomNumber, teamName, choice, score }) => {
+    let currentGame = await gameRoomTracker.find(element => {
+      return element.roomNumber === roomNumber;
+    });
+
     let index = gameRoomTracker.indexOf(currentGame);
     if (currentGame) {
       if (currentGame.rounds[round - 1] && currentGame.rounds[round - 1].choices.length < 3) {
@@ -95,8 +97,10 @@ io.on("connection", socket => {
         roomNumber: roomNumber,
       });
     }
+
     if (currentGame && currentGame.rounds[round - 1].choices.length > 2) {
-      currentGame.rounds[round - 1].choices = calculateCurrentRoundScore(currentGame.rounds[round - 1].choices);
+      currentGame.rounds[round - 1].choices = await calculateCurrentRoundScore(currentGame.rounds[round - 1].choices);
+      gameRoomTracker.splice(index, 1, currentGame);
       io.to(roomNumber).emit("finish round", currentGame);
     } else {
       io.to(roomNumber).emit("started game", currentGame);
@@ -107,7 +111,7 @@ io.on("connection", socket => {
   });
 });
 
-const calculateCurrentRoundScore = choices => {
+const calculateCurrentRoundScore = async choices => {
   let redChoices = choices.filter(choice => choice.choice === "red");
   let greenChoices = choices.filter(choice => choice.choice === "green");
 
