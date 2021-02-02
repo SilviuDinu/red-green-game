@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import LandingPage from "./components/LandingPage";
 import RoomInfo from "./components/RoomInfo";
 import Playground from "./components/Playground";
+import Loader from "./components/Loader";
 import { useState, useRef, useEffect } from "react";
 import io from "socket.io-client";
 
@@ -14,73 +15,189 @@ function App() {
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
   const [roundData, setRoundData] = useState([]);
+  const [roundProgress, setRoundProgress] = useState([]);
   const [roomNumber, setRoomNumber] = useState("");
   const [teamName, setTeamName] = useState("");
   const [showButtons, setShowButtons] = useState(true);
   const [showWaiting, setShowWaiting] = useState(true);
   const [isFacilitator, setIsFacilitator] = useState(false);
   const [message, setMessage] = useState("");
+  const [canReJoin, setCanReJoin] = useState(
+    sessionStorage.getItem("PREV_STATE") ? JSON.parse(sessionStorage.getItem("PREV_STATE")).canReJoin : false
+  );
+  const [loading, setLoading] = useState(false);
   const socketRef = useRef();
 
   useEffect(() => {
     if (!socketRef.current) {
       socketRef.current = io("/", { transports: ["polling"] });
     }
-    socketRef.current.on("finish round", (data) => {
+    socketRef.current.on("finish_round", data => {
       setRoundData(data.rounds);
+      setRoundProgress(data.rounds);
       setPlayState();
-      setRound((round) => round + 1);
+      setRound(round => round + 1);
+    });
+    socketRef.current.on("finish_game", data => {
+      sessionStorage.removeItem("PREV_ITEM");
+      setCanReJoin(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (connected) {
+      sessionStorage.setItem(
+        "PREV_STATE",
+        JSON.stringify({
+          connected: connected,
+          connectedTeams: connectedTeams,
+          gameStarted: gameStarted,
+          anyConnectionError: anyConnectionError,
+          round: round,
+          score: score,
+          roundData: roundData,
+          roundProgress: roundProgress,
+          roomNumber: roomNumber,
+          teamName: teamName,
+          showButtons: showButtons,
+          showWaiting: showWaiting,
+          isFacilitator: isFacilitator,
+          message: message,
+          canReJoin: canReJoin,
+        })
+      );
+    }
+  });
+
+  const reJoinRoom = async () => {
+    if (sessionStorage.getItem("PREV_STATE")) {
+      const prevState = await JSON.parse(sessionStorage.getItem("PREV_STATE"));
+
+      setLoading(true);
+
+      socketRef.current.emit("request_re_join", {
+        roomNumber: parseInt(prevState.roomNumber),
+        teamName: prevState.teamName,
+        isFacilitator: prevState.isFacilitator,
+      });
+      socketRef.current.on("cannot_re_join", () => {
+        sessionStorage.removeItem("PREV_ITEM");
+        setCanReJoin(false);
+        setLoading(false);
+        return;
+      });
+      socketRef.current.on("can_re_join", async () => {
+        setConnected(prevState.connected);
+        setConnectedTeams(prevState.connectedTeams);
+        setGameStarted(prevState.gameStarted);
+        setAnyConnectionError(prevState.anyConnectionError);
+        setRound(prevState.round);
+        setScore(prevState.score);
+        setRoundData(prevState.roundData);
+        setRoundProgress(prevState.roundProgress);
+        setRoomNumber(prevState.roomNumber);
+        setTeamName(prevState.teamName);
+        setShowButtons(prevState.showButtons);
+        setShowWaiting(prevState.showWaiting);
+        setIsFacilitator(prevState.isFacilitator);
+        setMessage(prevState.message);
+        setCanReJoin(prevState.canReJoin);
+        setLoading(false);
+        connect(
+          null,
+          prevState.roomNumber,
+          prevState.teamName,
+          prevState.isFacilitator,
+          true,
+          prevState.roundProgress || roundProgress,
+          prevState.round || round
+        );
+      });
+    }
+  };
 
   const handleCheck = () => {
     setIsFacilitator(!isFacilitator);
   };
 
-  const connect = (e, roomNumber, teamName, facilitator) => {
-    e.preventDefault();
-    socketRef.current.emit("join game", {
+  const connect = async (e, roomNumber, teamName, facilitator, rejoin, roundProgress, round) => {
+    setLoading(true);
+    if (e) {
+      e.preventDefault();
+    }
+    socketRef.current.emit("join_game", {
       roomNumber: parseInt(roomNumber),
       teamName: teamName,
       isFacilitator: facilitator,
+      rejoin: rejoin,
     });
-    socketRef.current.on("connection error", (error) => {
+    socketRef.current.on("connection_error", error => {
+      setLoading(false);
       setAnyConnectionError(true);
       setMessage(error);
     });
-    socketRef.current.on("joined teams in current room", (data) => {
+    socketRef.current.on("joined_teams_in_current_room", data => {
       setConnectedTeams(data[0].activeSessions);
       setAnyConnectionError(false);
       setConnected(true);
+      setCanReJoin(true);
+      setLoading(false);
     });
-    socketRef.current.on("can start game", () => {
-      setPlayState();
+    socketRef.current.on("can_start_game", data => {
+      if (!data) setPlayState();
+      else {
+        switch (facilitator) {
+          case false:
+            if (data.rounds && data.rounds[data.rounds.length - 1]) {
+              if (
+                data.rounds[data.rounds.length - 1].choices.length > 2 &&
+                data.rounds[data.rounds.length - 1].choices.find(elem => elem.teamName === teamName)
+              ) {
+                setRound(data.rounds.length + 1);
+                setPlayState();
+              } else if (!data.rounds[data.rounds.length - 1].choices.find(elem => elem.teamName === teamName)) {
+                setPlayState();
+              } else {
+                setWaitingState();
+              }
+            }
+            setRoundData(data.rounds);
+            setRoundProgress(data.rounds);
+            break;
+          default:
+            setRound(data.rounds[data.rounds.length - 1].choices.length > 2 ? data.rounds.length + 1 : data.rounds.length);
+            setRoundData(data.rounds);
+            setRoundProgress(data.rounds);
+        }
+      }
       setGameStarted(true);
+      setLoading(false);
     });
-    socketRef.current.on("cannot start game", () => {
+    socketRef.current.on("cannot_start_game", () => {
       setWaitingState();
+      setLoading(false);
     });
   };
 
-  const changeRoomNumber = (e) => {
+  const changeRoomNumber = e => {
     setRoomNumber(e.target.value);
   };
 
-  const changeTeamName = (e) => {
+  const changeTeamName = e => {
     setTeamName(e.target.value);
   };
 
   const play = (round, roomNumber, teamName, choice, score) => {
     setWaitingState();
-    socketRef.current.emit("start game", {
+    socketRef.current.emit("start_game", {
       round: round,
       roomNumber: parseInt(roomNumber),
       teamName: teamName,
       choice: choice,
       score: score,
     });
-    socketRef.current.on("started game", (roundData) => {
-      console.log(roundData);
+    socketRef.current.on("started_game", roundInfo => {
+      setRoundProgress(roundInfo.rounds);
     });
   };
 
@@ -98,12 +215,7 @@ function App() {
   if (connected) {
     body = (
       <>
-        <RoomInfo
-          connectedTeams={connectedTeams}
-          roomNumber={roomNumber}
-          teamName={teamName}
-          message={message}
-        />
+        <RoomInfo connectedTeams={connectedTeams} roomNumber={roomNumber} teamName={teamName} message={message} />
         <Playground
           round={round}
           score={score}
@@ -117,8 +229,6 @@ function App() {
           teamName={teamName}
           showButtons={showButtons}
           showWaiting={showWaiting}
-          setWaitingState={setWaitingState}
-          setPlayState={setPlayState}
         />
       </>
     );
@@ -132,6 +242,8 @@ function App() {
         handleCheck={handleCheck}
         message={message}
         isFacilitator={isFacilitator}
+        canReJoin={canReJoin}
+        tryReJoin={reJoinRoom}
         onChangeRoomNumber={changeRoomNumber}
         onChangeTeamName={changeTeamName}
       />
@@ -141,7 +253,7 @@ function App() {
   return (
     <div className="App">
       <Header />
-      {body}
+      {loading ? <Loader /> : body}
     </div>
   );
 }

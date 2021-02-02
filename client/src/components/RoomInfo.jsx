@@ -6,7 +6,7 @@ export default function RoomInfo(props) {
       <Message type="message" elem="h3" message={"Welcome to room " + props.roomNumber + ', ' + props.teamName} />
       <div>
         {props.connectedTeams.map((elem, index) => {
-          return <p key={index}>{elem.teamName}</p>;
+          return <p key={index} className={elem.isFacilitator ? "facilitator" : "player"}>{elem.teamName}</p>;
         })}
       </div>
     </>

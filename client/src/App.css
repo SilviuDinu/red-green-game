@@ -81,7 +81,7 @@ button {
   cursor: pointer;
 }
 
-.join-game-form button{
+button.join{
   height: 42.5px;
   color: #fff;
   box-shadow: none;
@@ -91,6 +91,20 @@ button {
   margin-top: 12px;
   width: 100%;
   border-radius: 8px;
+}
+
+
+p.player {
+  color: green;
+}
+p.facilitator {
+  color: rgb(211, 57, 57);
+}
+p.player, p.facilitator {
+  font-size: 16px;
+}
+.container.round-info{
+  margin-bottom: 80px;
 }
 
 .join {
@@ -156,4 +170,33 @@ button.red:hover {
 button.green:hover {
   transition-duration: 0.4s;
   background-color: rgb(101, 218, 101);
+}
+.loader {
+  border: 8px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 8px solid #3498db;
+  width: 70px;
+  height: 70px;
+  margin: 10em auto;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
