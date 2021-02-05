@@ -26,6 +26,7 @@ function App() {
     sessionStorage.getItem("PREV_STATE") ? JSON.parse(sessionStorage.getItem("PREV_STATE")).canReJoin : false
   );
   const [loading, setLoading] = useState(false);
+  const [hasGameEnded, setHasGameEnded] = useState(false);
   const socketRef = useRef();
 
   useEffect(() => {
@@ -41,6 +42,7 @@ function App() {
     socketRef.current.on("finish_game", data => {
       sessionStorage.removeItem("PREV_ITEM");
       setCanReJoin(false);
+      setHasGameEnded(true);
     });
   }, []);
 
@@ -64,6 +66,7 @@ function App() {
           isFacilitator: isFacilitator,
           message: message,
           canReJoin: canReJoin,
+          hasGameEnded: hasGameEnded,
         })
       );
     }
@@ -102,6 +105,7 @@ function App() {
         setIsFacilitator(prevState.isFacilitator);
         setMessage(prevState.message);
         setCanReJoin(prevState.canReJoin);
+        setHasGameEnded(prevState.hasGameEnded);
         setLoading(false);
         connect(
           null,
@@ -220,6 +224,7 @@ function App() {
           round={round}
           score={score}
           gameStarted={gameStarted}
+          hasGameEnded={hasGameEnded}
           play={play}
           roomNumber={roomNumber}
           roundData={roundData}

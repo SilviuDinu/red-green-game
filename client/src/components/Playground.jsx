@@ -10,23 +10,28 @@ export default function Playground(props) {
     }
   }
   let playgroundBody;
-  if (props.showButtons) {
+  if (props.showButtons && !props.showWaiting) {
     playgroundBody = (
       <Buttons play={playChoice} isFacilitator={props.isFacilitator} />
     );
-  } else if (props.showWaiting) {
+  } else {
     playgroundBody = <Message type="message" elem="p" message={"Waiting for other teams..."} />
   }
   return (
     <div className="playground">
       <RoundTitle round={props.round} />
-      {playgroundBody}
+      {
+        !props.hasGameEnded 
+          ? playgroundBody 
+          : <Message type="message" elem="p" message={"The game is over. Check the scoreboard below."} />
+      }
       {props.roundData && props.roundData.length > 0 ? (
         <RoundInfo
           round={props.round}
           roundData={props.roundData}
           connectedTeams={props.connectedTeams}
           teamName={props.teamName}
+          hasGameEnded={props.hasGameEnded}
         />
       ) : (
         <Message type="message" elem="p" message={"Finish the round to see scores..."} />

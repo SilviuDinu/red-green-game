@@ -134,10 +134,12 @@ io.on("connection", socket => {
     }
     if (round > 9) {
       const endGame = {
-        gameRoomTracker: gameRoomTracker.splice(index, 1),
-        connected: connected.splice(connected.indexOf(connected.find(element => element.roomNumber === roomNumber)), 1),
+        gameRoomTracker: currentGame,
+        connected: connected.find(element => element.roomNumber === roomNumber)
       };
       io.to(roomNumber).emit("finish_game", endGame);
+      gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1, 1);
+      connected.splice(connected.indexOf(connected.find(element => element.roomNumber === roomNumber)), 1);
     }
   });
 });
