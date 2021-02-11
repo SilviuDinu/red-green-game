@@ -97,10 +97,10 @@ button.join{
 p.player {
   color: green;
 }
-p.facilitator {
+p.me {
   color: rgb(211, 57, 57);
 }
-p.player, p.facilitator {
+p.player, p.me {
   font-size: 16px;
 }
 .container.round-info{

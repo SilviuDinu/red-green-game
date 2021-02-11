@@ -26,7 +26,7 @@ io.on("connection", socket => {
     let currentSessionData = connected.filter(element => element.roomNumber === roomNumber)[0];
     if (currentSessionData) {
       if (currentSessionData.activeSessions.length > 3) {
-        socket.emit("connection_error", `Room ${roomNumber} is full. Please join a different room.`);
+        socket.emit("connection_error", `Room ${roomNumber} is full or cannot be joined yet. Please join a different room.`);
         return;
       }
       if (currentSessionData.activeSessions.find(element => element.teamName === teamName)) {
@@ -89,6 +89,28 @@ io.on("connection", socket => {
     }
   });
 
+  socket.on("room_clear", ({ roomNumber, teamName, isFacilitator }) => {
+    console.log(connected)
+    const sessionData = connected.find(element => element.roomNumber === roomNumber);
+    console.log("sessionData_1", sessionData)
+    if (sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
+      let sessionIndex = connected.indexOf(sessionData);
+      sessionData.activeSessions.splice(
+        sessionData.activeSessions.indexOf(
+          sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)
+        ),
+        1
+      );
+      if (sessionData.activeSessions.length > 0) {
+        connected.splice(sessionIndex, 1, sessionData);
+      } else {
+        connected.splice(connected.indexOf(connected.find(element => element.roomNumber === roomNumber)), 1);
+        gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1);
+      }
+    }
+    console.log("sessionData_2", sessionData)
+  });
+
   socket.on("start_game", async ({ round, roomNumber, teamName, choice, score }) => {
     // check if the room exists already
     let currentGame = await gameRoomTracker.find(element => {
@@ -132,14 +154,12 @@ io.on("connection", socket => {
         })
       );
     }
-    if (round > 9) {
+    if (round > 3 && currentGame.rounds[round - 1].choices.length > 2) {
       const endGame = {
         gameRoomTracker: currentGame,
-        connected: connected.find(element => element.roomNumber === roomNumber)
+        connected: connected.find(element => element.roomNumber === roomNumber),
       };
       io.to(roomNumber).emit("finish_game", endGame);
-      gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1, 1);
-      connected.splice(connected.indexOf(connected.find(element => element.roomNumber === roomNumber)), 1);
     }
   });
 });

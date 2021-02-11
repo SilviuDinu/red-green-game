@@ -19,7 +19,7 @@ export default function Playground(props) {
   }
   return (
     <div className="playground">
-      <RoundTitle round={props.round} />
+      {!props.hasGameEnded ? <RoundTitle round={props.round} /> : null}
       {
         !props.hasGameEnded 
           ? playgroundBody 

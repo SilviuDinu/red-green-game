@@ -40,14 +40,20 @@ function App() {
       setRound(round => round + 1);
     });
     socketRef.current.on("finish_game", data => {
-      sessionStorage.removeItem("PREV_ITEM");
+      sessionStorage.removeItem("PREV_STATE");
       setCanReJoin(false);
       setHasGameEnded(true);
     });
   }, []);
 
   useEffect(() => {
-    if (connected) {
+    if (hasGameEnded) {
+      return () => socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName, isFacilitator });
+    }
+  }, [hasGameEnded, roomNumber, teamName, isFacilitator]);
+
+  useEffect(() => {
+    if (connected && !hasGameEnded) {
       sessionStorage.setItem(
         "PREV_STATE",
         JSON.stringify({
