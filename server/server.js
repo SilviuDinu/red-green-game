@@ -23,9 +23,9 @@ const gameRoomTracker = [];
 io.on("connection", socket => {
   console.log("new client connected");
   socket.on("join_game", async ({ roomNumber, teamName, isFacilitator, rejoin }) => {
-    let currentSessionData = connected.filter(element => element.roomNumber === roomNumber)[0];
+    let currentSessionData = connected.find(element => element.roomNumber === roomNumber);
     if (currentSessionData) {
-      if (currentSessionData.activeSessions.length > 3) {
+      if (currentSessionData.activeSessions.length > 3 || currentSessionData.roomLocked && !currentSessionData.activeSessions.find(element => element.teamName === teamName)) {
         socket.emit("connection_error", `Room ${roomNumber} is full or cannot be joined yet. Please join a different room.`);
         return;
       }
@@ -58,6 +58,7 @@ io.on("connection", socket => {
       connected.push({
         roomNumber,
         activeSessions: [{ teamName, isFacilitator }],
+        roomLocked: false
       });
     }
 
@@ -65,6 +66,9 @@ io.on("connection", socket => {
       "joined_teams_in_current_room",
       connected.filter(element => element.roomNumber === roomNumber)
     );
+    if(currentSessionData && currentSessionData.activeSessions.length > 3) {
+      currentSessionData.roomLocked = true;
+    } 
     currentSessionData && currentSessionData.activeSessions.length > 3
       ? !rejoin
         ? io.to(roomNumber).emit("can_start_game", null)
@@ -89,11 +93,9 @@ io.on("connection", socket => {
     }
   });
 
-  socket.on("room_clear", ({ roomNumber, teamName, isFacilitator }) => {
-    console.log(connected)
+  socket.on("room_clear", async ({ roomNumber, teamName, isFacilitator }) => {
     const sessionData = connected.find(element => element.roomNumber === roomNumber);
-    console.log("sessionData_1", sessionData)
-    if (sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
+    if (sessionData && sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
       let sessionIndex = connected.indexOf(sessionData);
       sessionData.activeSessions.splice(
         sessionData.activeSessions.indexOf(
@@ -104,11 +106,10 @@ io.on("connection", socket => {
       if (sessionData.activeSessions.length > 0) {
         connected.splice(sessionIndex, 1, sessionData);
       } else {
-        connected.splice(connected.indexOf(connected.find(element => element.roomNumber === roomNumber)), 1);
+        connected.splice(sessionIndex, 1);
         gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1);
       }
     }
-    console.log("sessionData_2", sessionData)
   });
 
   socket.on("start_game", async ({ round, roomNumber, teamName, choice, score }) => {

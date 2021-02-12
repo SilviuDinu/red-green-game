@@ -39,18 +39,7 @@ function App() {
       setPlayState();
       setRound(round => round + 1);
     });
-    socketRef.current.on("finish_game", data => {
-      sessionStorage.removeItem("PREV_STATE");
-      setCanReJoin(false);
-      setHasGameEnded(true);
-    });
   }, []);
-
-  useEffect(() => {
-    if (hasGameEnded) {
-      return () => socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName, isFacilitator });
-    }
-  }, [hasGameEnded, roomNumber, teamName, isFacilitator]);
 
   useEffect(() => {
     if (connected && !hasGameEnded) {
@@ -75,8 +64,25 @@ function App() {
           hasGameEnded: hasGameEnded,
         })
       );
+      socketRef.current.on("finish_game", data => {
+        sessionStorage.removeItem("PREV_STATE");
+        setCanReJoin(false);
+        setHasGameEnded(true);
+        window.onbeforeunload = function (event) {
+          socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName: teamName, isFacilitator: isFacilitator });
+        };
+      });
     }
   });
+
+  // useEffect(() => {
+  //   return () => {
+  //     if (hasGameEnded) {
+  //       alert("unmounting");
+  //       socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName: teamName, isFacilitator: isFacilitator });
+  //     }
+  //   };
+  // }, [hasGameEnded, canReJoin]);
 
   const reJoinRoom = async () => {
     if (sessionStorage.getItem("PREV_STATE")) {
@@ -229,6 +235,7 @@ function App() {
         <Playground
           round={round}
           score={score}
+          socketRef={socketRef}
           gameStarted={gameStarted}
           hasGameEnded={hasGameEnded}
           play={play}
