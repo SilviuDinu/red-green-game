@@ -39,15 +39,10 @@ function App() {
       setPlayState();
       setRound(round => round + 1);
     });
-    socketRef.current.on("finish_game", data => {
-      sessionStorage.removeItem("PREV_ITEM");
-      setCanReJoin(false);
-      setHasGameEnded(true);
-    });
   }, []);
 
   useEffect(() => {
-    if (connected) {
+    if (connected && !hasGameEnded) {
       sessionStorage.setItem(
         "PREV_STATE",
         JSON.stringify({
@@ -69,8 +64,25 @@ function App() {
           hasGameEnded: hasGameEnded,
         })
       );
+      socketRef.current.on("finish_game", data => {
+        sessionStorage.removeItem("PREV_STATE");
+        setCanReJoin(false);
+        setHasGameEnded(true);
+        window.onbeforeunload = function (event) {
+          socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName: teamName, isFacilitator: isFacilitator });
+        };
+      });
     }
   });
+
+  // useEffect(() => {
+  //   return () => {
+  //     if (hasGameEnded) {
+  //       alert("unmounting");
+  //       socketRef.current.emit("room_clear", { roomNumber: parseInt(roomNumber), teamName: teamName, isFacilitator: isFacilitator });
+  //     }
+  //   };
+  // }, [hasGameEnded, canReJoin]);
 
   const reJoinRoom = async () => {
     if (sessionStorage.getItem("PREV_STATE")) {
@@ -83,10 +95,17 @@ function App() {
         teamName: prevState.teamName,
         isFacilitator: prevState.isFacilitator,
       });
-      socketRef.current.on("cannot_re_join", () => {
+      socketRef.current.on("cannot_re_join", isGameOver => {
         sessionStorage.removeItem("PREV_ITEM");
         setCanReJoin(false);
         setLoading(false);
+        if (isGameOver) {
+          socketRef.current.emit("room_clear", {
+            roomNumber: parseInt(prevState.roomNumber),
+            teamName: prevState.teamName,
+            isFacilitator: prevState.isFacilitator,
+          });
+        }
         return;
       });
       socketRef.current.on("can_re_join", async () => {
@@ -105,7 +124,6 @@ function App() {
         setIsFacilitator(prevState.isFacilitator);
         setMessage(prevState.message);
         setCanReJoin(prevState.canReJoin);
-        setHasGameEnded(prevState.hasGameEnded);
         setLoading(false);
         connect(
           null,
@@ -160,6 +178,7 @@ function App() {
                 setRound(data.rounds.length + 1);
                 setPlayState();
               } else if (!data.rounds[data.rounds.length - 1].choices.find(elem => elem.teamName === teamName)) {
+                setRound(data.rounds.length);
                 setPlayState();
               } else {
                 setWaitingState();
@@ -223,6 +242,7 @@ function App() {
         <Playground
           round={round}
           score={score}
+          socketRef={socketRef}
           gameStarted={gameStarted}
           hasGameEnded={hasGameEnded}
           play={play}
