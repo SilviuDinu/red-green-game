@@ -95,10 +95,17 @@ function App() {
         teamName: prevState.teamName,
         isFacilitator: prevState.isFacilitator,
       });
-      socketRef.current.on("cannot_re_join", () => {
+      socketRef.current.on("cannot_re_join", isGameOver => {
         sessionStorage.removeItem("PREV_ITEM");
         setCanReJoin(false);
         setLoading(false);
+        if (isGameOver) {
+          socketRef.current.emit("room_clear", {
+            roomNumber: parseInt(prevState.roomNumber),
+            teamName: prevState.teamName,
+            isFacilitator: prevState.isFacilitator,
+          });
+        }
         return;
       });
       socketRef.current.on("can_re_join", async () => {
@@ -117,7 +124,6 @@ function App() {
         setIsFacilitator(prevState.isFacilitator);
         setMessage(prevState.message);
         setCanReJoin(prevState.canReJoin);
-        setHasGameEnded(prevState.hasGameEnded);
         setLoading(false);
         connect(
           null,
@@ -172,6 +178,7 @@ function App() {
                 setRound(data.rounds.length + 1);
                 setPlayState();
               } else if (!data.rounds[data.rounds.length - 1].choices.find(elem => elem.teamName === teamName)) {
+                setRound(data.rounds.length);
                 setPlayState();
               } else {
                 setWaitingState();

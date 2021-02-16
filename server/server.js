@@ -24,8 +24,16 @@ io.on("connection", socket => {
   console.log("new client connected");
   socket.on("join_game", async ({ roomNumber, teamName, isFacilitator, rejoin }) => {
     let currentSessionData = connected.find(element => element.roomNumber === roomNumber);
+    let game = gameRoomTracker.find(elem => elem.roomNumber === roomNumber);
     if (currentSessionData) {
-      if (currentSessionData.activeSessions.length > 3 || currentSessionData.roomLocked && !currentSessionData.activeSessions.find(element => element.teamName === teamName)) {
+      if (
+        currentSessionData.activeSessions.length > 3 ||
+        (game &&
+          game.rounds &&
+          game.rounds.length > 9 &&
+          game.rounds[game.rounds.length - 1].choices.length > 2 &&
+          currentSessionData.activeSessions.length > 0)
+      ) {
         socket.emit("connection_error", `Room ${roomNumber} is full or cannot be joined yet. Please join a different room.`);
         return;
       }
@@ -58,7 +66,7 @@ io.on("connection", socket => {
       connected.push({
         roomNumber,
         activeSessions: [{ teamName, isFacilitator }],
-        roomLocked: false
+        roomLocked: false,
       });
     }
 
@@ -66,9 +74,6 @@ io.on("connection", socket => {
       "joined_teams_in_current_room",
       connected.filter(element => element.roomNumber === roomNumber)
     );
-    if(currentSessionData && currentSessionData.activeSessions.length > 3) {
-      currentSessionData.roomLocked = true;
-    } 
     currentSessionData && currentSessionData.activeSessions.length > 3
       ? !rejoin
         ? io.to(roomNumber).emit("can_start_game", null)
@@ -83,33 +88,26 @@ io.on("connection", socket => {
 
   socket.on("request_re_join", async ({ roomNumber, teamName, isFacilitator }) => {
     let currentStatus = connected.find(element => element.roomNumber === roomNumber);
-    if (currentStatus && currentStatus.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
+    let game = gameRoomTracker.find(elem => elem.roomNumber === roomNumber);
+    if (
+      ((game && !(game.rounds.length > 9 && game.rounds[game.rounds.length - 1].choices.length > 2)) || !game) &&
+      currentStatus &&
+      currentStatus.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)
+    ) {
       let currentActiveSession = currentStatus.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator);
       let currIndex = currentStatus.activeSessions.indexOf(currentActiveSession);
       currentStatus.activeSessions.splice(currIndex, 1);
       socket.emit("can_re_join");
     } else {
-      socket.emit("cannot_re_join");
+      socket.emit("cannot_re_join", game && game.rounds && game.rounds.length > 9 && game.rounds[game.rounds.length - 1].choices.length > 2);
+      if (game && game.rounds && !(game.rounds.length > 9 && game.rounds[game.rounds.length - 1].choices.length > 2)) {
+        clearRoom(roomNumber, teamName, isFacilitator);
+      }
     }
   });
 
   socket.on("room_clear", async ({ roomNumber, teamName, isFacilitator }) => {
-    const sessionData = connected.find(element => element.roomNumber === roomNumber);
-    if (sessionData && sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
-      let sessionIndex = connected.indexOf(sessionData);
-      sessionData.activeSessions.splice(
-        sessionData.activeSessions.indexOf(
-          sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)
-        ),
-        1
-      );
-      if (sessionData.activeSessions.length > 0) {
-        connected.splice(sessionIndex, 1, sessionData);
-      } else {
-        connected.splice(sessionIndex, 1);
-        gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1);
-      }
-    }
+    clearRoom(roomNumber, teamName, isFacilitator);
   });
 
   socket.on("start_game", async ({ round, roomNumber, teamName, choice, score }) => {
@@ -155,7 +153,7 @@ io.on("connection", socket => {
         })
       );
     }
-    if (round > 3 && currentGame.rounds[round - 1].choices.length > 2) {
+    if (round > 9 && currentGame.rounds[round - 1].choices.length > 2) {
       const endGame = {
         gameRoomTracker: currentGame,
         connected: connected.find(element => element.roomNumber === roomNumber),
@@ -164,6 +162,23 @@ io.on("connection", socket => {
     }
   });
 });
+
+const clearRoom = async (roomNumber, teamName, isFacilitator) => {
+  const sessionData = connected.find(element => element.roomNumber === roomNumber);
+  if (sessionData && sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)) {
+    let sessionIndex = connected.indexOf(sessionData);
+    sessionData.activeSessions.splice(
+      sessionData.activeSessions.indexOf(sessionData.activeSessions.find(elem => elem.teamName === teamName && elem.isFacilitator === isFacilitator)),
+      1
+    );
+    if (sessionData.activeSessions.length > 0) {
+      connected.splice(sessionIndex, 1, sessionData);
+    } else {
+      connected.splice(sessionIndex, 1);
+      gameRoomTracker.splice(gameRoomTracker.indexOf(gameRoomTracker.find(element => element.roomNumber === roomNumber)), 1);
+    }
+  }
+};
 
 const calculateCurrentRoundScore = async (choices, round) => {
   let redChoices = choices.filter(choice => choice.choice === "red");
